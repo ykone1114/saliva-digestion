@@ -171,7 +171,7 @@
         /* ===== 工作区 ===== */
         .workspace {
             flex: 1;
-            min-width: 320px;
+            min-width: 280px;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -211,7 +211,7 @@
             gap: 4px;
             transition: all 0.3s;
             cursor: pointer;
-            touch-action: none;  /* 防止浏览器默认触摸行为干扰 */
+            touch-action: none;
         }
         .tube-wrapper:active {
             transform: scale(0.97);
@@ -460,7 +460,6 @@
             justify-content: center;
             position: relative;
         }
-        /* 关键修改：未放入试管时，隐藏迷你试管 */
         .beaker .tube-slot .slot-item:not(.filled) .mini-tube {
             display: none;
         }
@@ -485,10 +484,10 @@
             width: 100%;
             border-radius: 0 0 10px 10px;
             transition: all 0.6s;
-            height: 0; /* 默认高度0，防止占位 */
+            height: 0;
         }
         .beaker .tube-slot .slot-item.filled .mini-tube .mini-content {
-            height: 50%; /* 放入后显示内容 */
+            height: 50%;
         }
         .mini-content.darkblue {
             background: #1a2a5a;
@@ -942,7 +941,6 @@
         .modal-box .selector-group .options .opt-btn:active {
             transform: scale(0.95);
         }
-        /* 搅拌选项在模态框中 (已删除图标) */
         .modal-box .stir-group {
             display: flex;
             flex-direction: column;
@@ -1056,6 +1054,106 @@
         }
 
         /* ===== 响应式 ===== */
+
+        /* 平板适配 (768px ~ 1024px) */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .materials {
+                flex: 0 0 120px;
+                padding: 10px 10px 12px;
+            }
+            .materials .label {
+                font-size: 12px;
+            }
+            .mat-item {
+                font-size: 12px;
+                padding: 6px 6px;
+            }
+            .controls {
+                flex: 0 0 180px;
+                padding: 12px 10px 14px;
+            }
+            .controls .ctrl-label {
+                font-size: 12px;
+            }
+            .temp-control .temp-display {
+                font-size: 24px;
+            }
+            .temp-control input[type="range"] {
+                height: 4px;
+            }
+            .btn {
+                font-size: 13px;
+                padding: 8px 6px;
+            }
+            .tube {
+                width: 44px;
+                height: 100px;
+            }
+            .beaker {
+                max-width: 280px;
+                height: 130px;
+            }
+            .beaker .tube-slot .slot-item {
+                width: 30px;
+                height: 60px;
+            }
+            .beaker .tube-slot .slot-item .mini-tube {
+                width: 22px;
+                height: 45px;
+            }
+            .rack-area {
+                gap: 10px;
+                padding: 6px 10px 4px;
+                min-height: 150px;
+            }
+            .tube-wrapper .tube-label {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+            .result-area .result-detail .r-item {
+                min-width: 90px;
+                padding: 4px 8px;
+            }
+            .result-selector .btn-result {
+                font-size: 12px;
+                padding: 5px 10px;
+                min-width: 60px;
+            }
+            .hint-banner .hint-text {
+                font-size: 18px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+            .step-indicator .step-dot {
+                font-size: 9px;
+                padding: 2px 8px;
+            }
+            .modal-box {
+                max-width: 340px;
+                padding: 20px 15px;
+            }
+            .modal-box .selector-group .options .opt-btn {
+                font-size: 13px;
+                padding: 6px 14px;
+                min-width: 60px;
+            }
+            .modal-box .stir-group .options .stir-btn {
+                font-size: 13px;
+                padding: 5px 16px;
+                min-width: 50px;
+            }
+            .status-display {
+                font-size: 14px;
+                padding: 4px 10px;
+                min-height: 36px;
+            }
+            .footer-info {
+                font-size: 11px;
+            }
+        }
+
+        /* 手机及小屏平板 (< 768px) */
         @media (max-width: 768px) {
             .app {
                 padding: 12px;
@@ -1205,6 +1303,8 @@
                 min-width: 60px;
             }
         }
+
+        /* 小屏手机 (< 400px) */
         @media (max-width: 400px) {
             .tube {
                 width: 36px;
@@ -1625,16 +1725,13 @@
                     const tube = tubes[i];
                     const slot = slotItems[i];
                     const mini = miniContents[i];
-                    // 根据是否在烧杯中决定是否显示迷你试管
                     if (tube.inBeaker) {
                         slot.classList.add('filled');
-                        // 设置颜色
                         let cls = 'default';
                         if (tube.result) cls = tube.result;
                         mini.className = 'mini-content ' + cls;
                     } else {
                         slot.classList.remove('filled');
-                        // 重置颜色（但隐藏了，无所谓）
                         mini.className = 'mini-content default';
                     }
                 }
@@ -1735,7 +1832,6 @@
 
             tubeWrappers.forEach((wrapper, idx) => {
                 wrapper.addEventListener('click', function(e) {
-                    // 防止点击时触发拖拽
                     if (!e._drag) openModal(idx);
                 });
             });
@@ -2077,7 +2173,6 @@
                             }
                         }
                     } else {
-                        // 未移动视为点击
                         const idx = dragData.idx;
                         openModal(idx);
                     }
