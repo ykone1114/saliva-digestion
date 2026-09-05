@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>探究唾液淀粉酶对馒头的消化</title>
+    <style>
+        /* ===== 全局重置 ===== */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #f0efe7 0%, #e8e5d8 100%);
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            touch-action: none;
+        }
+        .app {
+            max-width: 1400px;
+            width: 100%;
+            background: #d9d4c5;
+            border-radius: 40px 40px 30px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 240, 0.6);
+            padding: 20px 20px 30px;
+            border: 2px solid #b8af9a;
+        }
+
+        /* ===== 标题 ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #3d2c1b;
+            margin: 0;
+            letter-spacing: 1px;
+            background: linear-gradient(to right, #4a3622, #6b4f32);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header .sub {
+            font-size: 13px;
+            color: #5a4a34;
+            background: rgba(235, 225, 210, 0.6);
+            padding: 2px 14px;
+            border-radius: 30px;
+            border: 1px solid #b8aa92;
+            font-weight: 500;
+        }
+
+        /* ===== 醒目提示横幅 ===== */
+        .hint-banner {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            border-radius: 20px;
+            padding: 14px 24px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 20px rgba(243, 156, 18, 0.35);
+            border: 2px solid #d68910;
+            text-align: center;
+            transition: all 0.4s ease;
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hint-banner .hint-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+        .hint-banner .hint-text .step-icon {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .hint-banner.state-heating {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-color: #1f618d;
+        }
+        .hint-banner.state-result {
+            background: linear-gradient(135deg, #27ae60, #1e8449);
+            border-color: #145a32;
+        }
+        .hint-banner .spinner {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 12px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== 实验台布局 ===== */
+        .bench {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            background: #c4b9a6;
+            border-radius: 30px;
+            padding: 18px;
+            box-shadow: inset 0 -6px 0 #a69983, inset 0 6px 12px rgba(255, 242, 220, 0.5);
+            border: 1px solid #b0a18a;
+        }
+
+        /* ===== 材料区 ===== */
+        .materials {
+            flex: 0 0 160px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(220, 212, 196, 0.5);
+            padding: 14px 12px 16px;
+            border-radius: 25px;
+            border: 2px dashed #a0927c;
+        }
+        .materials .label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #f5efe4;
+            text-align: center;
+            background: #b8ab94;
+            padding: 3px 0;
+            border-radius: 30px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .mat-item {
+            background: #f5efe4;
+            border-radius: 50px;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #3d3223;
+            border: 2px solid #b8aa92;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .mat-item .icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        /* ===== 工作区 ===== */
+        .workspace {
+            flex: 1;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* ===== 试管架 ===== */
+        .rack-area {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            padding: 8px 12px 5px;
+            background: rgba(190, 178, 160, 0.4);
+            border-radius: 30px 30px 15px 15px;
+            border-bottom: 6px solid #a69780;
+            min-height: 160px;
+            position: relative;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .rack-label {
+            position: absolute;
+            top: -8px;
+            left: 20px;
+            background: #b8ab94;
+            color: #f5efe4;
+            font-size: 11px;
+            padding: 0 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            height: 20px;
+            line-height: 20px;
+        }
+        .tube-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s;
+            cursor: pointer;
+            touch-action: none;  /* 防止浏览器默认触摸行为干扰 */
+        }
+        .tube-wrapper:active {
+            transform: scale(0.97);
+        }
+        .tube-wrapper.in-beaker .tube {
+            border-color: rgba(160, 180, 200, 0.5);
+            box-shadow: inset -4px -4px 12px rgba(0, 0, 0, 0.05), inset 4px 4px 12px rgba(255, 255, 255, 0.3), 0 0 0 2px rgba(100, 180, 255, 0.2);
+        }
+        .tube-wrapper .tube-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #3d3223;
+            background: #e5dccc;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid #b8aa92;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .tube-wrapper .tube-label .stir-badge {
+            font-size: 9px;
+            background: #b8834a;
+            color: #fff;
+            padding: 0 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .tube {
+            width: 48px;
+            height: 110px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 3px solid rgba(200, 190, 175, 0.7);
+            border-top: none;
+            border-radius: 0 0 25px 25px;
+            position: relative;
+            backdrop-filter: blur(4px);
+            box-shadow: inset -4px -4px 12px rgba(0, 0, 0, 0.08), inset 4px 4px 12px rgba(255, 255, 255, 0.5);
+            overflow: hidden;
+        }
+        .tube .content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            transition: all 0.5s ease;
+            border-radius: 0 0 22px 22px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #2d2418;
+            overflow: hidden;
+        }
+        .tube .content .food {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2px;
+            padding: 2px;
+        }
+        .tube .content .food .chunk {
+            width: 14px;
+            height: 10px;
+            background: #d4a373;
+            border-radius: 3px 2px 5px 3px;
+            border: 1px solid #b8834a;
+            box-shadow: inset 0 -2px 0 #a0703e;
+        }
+        .tube .content .food .crumb {
+            width: 6px;
+            height: 4px;
+            background: #dbb58b;
+            border-radius: 2px;
+            border: 1px solid #c4956a;
+            display: inline-block;
+        }
+        .tube .content .saliva {
+            width: 90%;
+            height: 10px;
+            background: rgba(240, 235, 210, 0.6);
+            border-radius: 10px;
+            margin: 2px auto;
+            border: 1px solid rgba(200, 190, 160, 0.3);
+        }
+        .tube .content .water-marker {
+            width: 90%;
+            height: 10px;
+            background: rgba(100, 200, 255, 0.3);
+            border-radius: 10px;
+            margin: 2px auto;
+            border: 1px solid rgba(100, 200, 255, 0.3);
+        }
+        .tube .content .iodine {
+            width: 90%;
+            height: 16px;
+            border-radius: 10px;
+            margin: 2px auto;
+            transition: background 0.8s;
+            border: 1px solid rgba(150, 120, 80, 0.2);
+        }
+        /* 四种碘液颜色 */
+        .iodine.darkblue {
+            background: #1a2a5a;
+            box-shadow: inset 0 0 20px rgba(30, 60, 150, 0.3);
+        }
+        .iodine.blue {
+            background: #2a5a8a;
+            box-shadow: inset 0 0 20px rgba(40, 80, 140, 0.3);
+        }
+        .iodine.lightblue {
+            background: #4a7ab5;
+            box-shadow: inset 0 0 20px rgba(70, 130, 200, 0.3);
+        }
+        .iodine.brown {
+            background: #a67c52;
+            box-shadow: inset 0 0 20px rgba(160, 120, 80, 0.3);
+        }
+
+        .tube .content .empty-msg {
+            font-size: 11px;
+            color: #8a7a64;
+            opacity: 0.6;
+            padding-bottom: 15px;
+        }
+        .tube .content .status-text {
+            font-size: 9px;
+            color: #6b5a44;
+            background: rgba(255, 255, 240, 0.4);
+            padding: 0 8px;
+            border-radius: 10px;
+            margin-top: 2px;
+        }
+
+        /* ===== 烧杯 ===== */
+        .beaker-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 5px;
+        }
+        .beaker {
+            width: 100%;
+            max-width: 340px;
+            height: 150px;
+            background: rgba(180, 215, 240, 0.2);
+            border: 4px solid rgba(160, 180, 200, 0.5);
+            border-top: 2px solid rgba(160, 180, 200, 0.3);
+            border-radius: 0 0 35px 35px;
+            position: relative;
+            box-shadow: inset 0 -10px 30px rgba(100, 180, 255, 0.15), 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+        .beaker .water {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75%;
+            background: linear-gradient(180deg, rgba(130, 200, 240, 0.25) 0%, rgba(70, 160, 220, 0.35) 100%);
+            border-radius: 0 0 31px 31px;
+        }
+        .beaker .water::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 10%;
+            width: 80%;
+            height: 10px;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.3) 0%, transparent 80%);
+            border-radius: 50%;
+            animation: shimmer 3s infinite alternate;
+        }
+        @keyframes shimmer {
+            0% {
+                opacity: 0.3;
+                transform: translateX(-10px);
+            }
+            100% {
+                opacity: 0.8;
+                transform: translateX(10px);
+            }
+        }
+        .beaker .scale {
+            position: absolute;
+            right: 8px;
+            top: 15px;
+            height: 70%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 9px;
+            color: rgba(80, 120, 160, 0.4);
+            font-weight: 600;
+        }
+        .beaker .scale span {
+            border-right: 2px solid rgba(80, 120, 160, 0.15);
+            padding-right: 4px;
+            height: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .beaker .scale span::after {
+            content: attr(data-label);
+            font-size: 8px;
+            margin-left: 3px;
+            opacity: 0.5;
+        }
+        .beaker-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #4d3e2b;
+            margin-top: 4px;
+            background: rgba(220, 212, 196, 0.6);
+            padding: 2px 18px;
+            border-radius: 30px;
+            border: 1px solid #b8aa92;
+        }
+        .beaker .tube-slot {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            height: 80%;
+            pointer-events: none;
+            z-index: 5;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .beaker .tube-slot .slot-item {
+            width: 34px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 15px 15px;
+            border: 2px dashed rgba(160, 180, 200, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        /* 关键修改：未放入试管时，隐藏迷你试管 */
+        .beaker .tube-slot .slot-item:not(.filled) .mini-tube {
+            display: none;
+        }
+        .beaker .tube-slot .slot-item.filled {
+            border-color: rgba(160, 180, 200, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .beaker .tube-slot .slot-item .mini-tube {
+            width: 24px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(200, 200, 200, 0.2);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        .beaker .tube-slot .slot-item .mini-tube .mini-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            border-radius: 0 0 10px 10px;
+            transition: all 0.6s;
+            height: 0; /* 默认高度0，防止占位 */
+        }
+        .beaker .tube-slot .slot-item.filled .mini-tube .mini-content {
+            height: 50%; /* 放入后显示内容 */
+        }
+        .mini-content.darkblue {
+            background: #1a2a5a;
+        }
+        .mini-content.blue {
+            background: #2a5a8a;
+        }
+        .mini-content.lightblue {
+            background: #4a7ab5;
+        }
+        .mini-content.brown {
+            background: #a67c52;
+        }
+        .mini-content.default {
+            background: #c49a6c;
+        }
+
+        .beaker .tube-slot .slot-item .slot-label {
+            position: absolute;
+            bottom: -18px;
+            font-size: 9px;
+            font-weight: 600;
+            color: #5a4a34;
+            background: rgba(235, 225, 210, 0.7);
+            padding: 0 6px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+
+        /* ===== 控制区 ===== */
+        .controls {
+            flex: 0 0 220px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(220, 212, 196, 0.4);
+            padding: 15px 14px 18px;
+            border-radius: 25px;
+            border: 2px solid #b8aa92;
+        }
+        .controls .ctrl-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #4d3e2b;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .temp-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background: rgba(240, 235, 225, 0.4);
+            padding: 10px 8px 12px;
+            border-radius: 20px;
+            border: 1px solid #c4b7a2;
+        }
+        .temp-control .temp-display {
+            font-size: 28px;
+            font-weight: 800;
+            color: #2d2418;
+            line-height: 1;
+            background: #f5efe4;
+            padding: 0 14px;
+            border-radius: 25px;
+            border: 2px solid #b8aa92;
+            min-width: 70px;
+            text-align: center;
+        }
+        .temp-control .temp-display span {
+            font-size: 16px;
+            font-weight: 600;
+            color: #6b5a44;
+        }
+        .temp-control .temp-display.placeholder {
+            color: #b0a08a;
+        }
+        .temp-control input[type="range"] {
+            width: 100%;
+            accent-color: #b8834a;
+            height: 5px;
+            background: #d6cbbc;
+            border-radius: 10px;
+            outline: none;
+        }
+        .temp-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #b8834a;
+            border-radius: 50%;
+            border: 2px solid #f5efe4;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+        .temp-control .temp-hint {
+            font-size: 11px;
+            color: #8a7a64;
+            margin-top: 2px;
+        }
+
+        .time-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .time-selector .time-btn {
+            padding: 5px 14px;
+            border-radius: 30px;
+            border: 2px solid #b8aa92;
+            background: #f5efe4;
+            font-weight: 700;
+            font-size: 13px;
+            color: #3d3223;
+            cursor: pointer;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+        .time-selector .time-btn.active {
+            background: #b8834a;
+            color: #f5efe4;
+            border-color: #a0703e;
+        }
+        .time-selector .time-btn:active {
+            transform: scale(0.95);
+        }
+        .time-selector .time-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn {
+            padding: 10px 8px;
+            border: none;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 3px 0 #8a7a64;
+            letter-spacing: 0.5px;
+            color: #f5efe4;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            touch-action: manipulation;
+        }
+        .btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 0px 0 #8a7a64;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: 0 3px 0 #8a7a64 !important;
+        }
+        .btn-reset {
+            background: linear-gradient(145deg, #7f8c8d, #5d6d6e);
+        }
+        .btn-reset:hover:not(:disabled) {
+            background: linear-gradient(145deg, #929f9f, #6d7d7e);
+        }
+        .btn-result {
+            background: linear-gradient(145deg, #2980b9, #1f618d);
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 30px;
+            flex: 1;
+        }
+        .btn-result:hover:not(:disabled) {
+            background: linear-gradient(145deg, #3498db, #2471a3);
+        }
+        .btn-result.active {
+            background: linear-gradient(145deg, #27ae60, #1e8449);
+            box-shadow: 0 3px 0 #145a32;
+        }
+
+        /* ===== 状态显示 ===== */
+        .status-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid #b8aa92;
+            font-weight: 700;
+            font-size: 15px;
+            color: #3d3223;
+            min-height: 40px;
+        }
+        .status-display .status-icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+        .status-display .status-icon.spin {
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* ===== 结果区域 ===== */
+        .result-area {
+            margin-top: 4px;
+            padding: 10px 12px;
+            border-radius: 25px;
+            background: rgba(235, 225, 210, 0.5);
+            border: 2px solid #b8aa92;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s;
+        }
+        .result-area .result-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #4d3e2b;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .result-area .result-detail {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 4px;
+            width: 100%;
+        }
+        .result-area .result-detail .r-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 248, 235, 0.5);
+            padding: 6px 10px;
+            border-radius: 25px;
+            border: 1px solid #c4b7a2;
+            min-width: 100px;
+            flex: 1 0 auto;
+            max-width: 200px;
+        }
+        .result-area .result-detail .r-item .top {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .result-area .result-detail .r-item .bottom {
+            font-size: 11px;
+            color: #3d3223;
+            background: rgba(255, 255, 240, 0.6);
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 2px;
+            text-align: center;
+        }
+        .result-area .result-detail .r-item .color-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
+        }
+        .color-dot.darkblue {
+            background: #1a2a5a;
+        }
+        .color-dot.blue {
+            background: #2a5a8a;
+        }
+        .color-dot.lightblue {
+            background: #4a7ab5;
+        }
+        .color-dot.brown {
+            background: #a67c52;
+        }
+
+        .result-area .result-empty {
+            color: #8a7a64;
+            font-size: 12px;
+            opacity: 0.6;
+        }
+        .result-area.show-result {
+            animation: resultPulse 0.6s ease 2;
+            background: rgba(235, 225, 210, 0.8);
+            border-color: #b8834a;
+        }
+        @keyframes resultPulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+
+        /* 结果选择按钮 */
+        .result-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+            margin-top: 4px;
+        }
+        .result-selector .btn-result {
+            min-width: 70px;
+            font-size: 13px;
+            padding: 6px 12px;
+        }
+
+        /* ===== 步骤指示器 ===== */
+        .step-indicator {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 5px;
+        }
+        .step-indicator .step-dot {
+            padding: 3px 10px;
+            border-radius: 25px;
+            font-size: 10px;
+            font-weight: 600;
+            background: #d6cbbc;
+            color: #8a7a64;
+            border: 1px solid #b8aa92;
+            transition: all 0.3s;
+        }
+        .step-indicator .step-dot.active {
+            background: #b8834a;
+            color: #f5efe4;
+            border-color: #a0703e;
+            box-shadow: 0 2px 8px rgba(184, 131, 74, 0.3);
+        }
+        .step-indicator .step-dot.done {
+            background: #7a9a7a;
+            color: #f5efe4;
+            border-color: #5a7a5a;
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #3d3223;
+            color: #f5efe4;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 9999;
+            pointer-events: none;
+            border: 1px solid rgba(255, 255, 200, 0.1);
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== 模态框 ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-box {
+            background: #f5efe4;
+            border-radius: 30px;
+            padding: 25px 20px 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-box h3 {
+            margin: 0 0 8px 0;
+            color: #3d3223;
+            font-size: 20px;
+        }
+        .modal-box .modal-sub {
+            font-size: 14px;
+            color: #6b5a44;
+            margin-bottom: 15px;
+        }
+        .modal-box .selector-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .modal-box .selector-group .group-label {
+            font-weight: 700;
+            color: #4d3e2b;
+            font-size: 14px;
+        }
+        .modal-box .selector-group .options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .modal-box .selector-group .options .opt-btn {
+            padding: 8px 18px;
+            border-radius: 50px;
+            border: 2px solid #b8aa92;
+            background: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 70px;
+            touch-action: manipulation;
+        }
+        .modal-box .selector-group .options .opt-btn.selected {
+            background: #b8834a;
+            color: #f5efe4;
+            border-color: #a0703e;
+        }
+        .modal-box .selector-group .options .opt-btn:active {
+            transform: scale(0.95);
+        }
+        /* 搅拌选项在模态框中 (已删除图标) */
+        .modal-box .stir-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .modal-box .stir-group .group-label {
+            font-weight: 700;
+            color: #4d3e2b;
+            font-size: 14px;
+        }
+        .modal-box .stir-group .options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .modal-box .stir-group .options .stir-btn {
+            padding: 6px 20px;
+            border-radius: 50px;
+            border: 2px solid #b8aa92;
+            background: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 60px;
+            touch-action: manipulation;
+        }
+        .modal-box .stir-group .options .stir-btn.selected {
+            background: #b8834a;
+            color: #f5efe4;
+            border-color: #a0703e;
+        }
+        .modal-box .stir-group .options .stir-btn:active {
+            transform: scale(0.95);
+        }
+
+        .modal-box .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .modal-box .modal-actions .modal-btn-confirm {
+            padding: 10px 30px;
+            border-radius: 50px;
+            border: none;
+            background: #27ae60;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #1e8449;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+        .modal-box .modal-actions .modal-btn-confirm:active {
+            transform: translateY(3px);
+            box-shadow: 0 0px 0 #1e8449;
+        }
+        .modal-box .modal-actions .modal-btn-confirm:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: 0 3px 0 #1e8449;
+        }
+        .modal-box .modal-actions .modal-btn-cancel {
+            padding: 10px 30px;
+            border-radius: 50px;
+            border: none;
+            background: #7f8c8d;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #5d6d6e;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+        .modal-box .modal-actions .modal-btn-cancel:active {
+            transform: translateY(3px);
+            box-shadow: 0 0px 0 #5d6d6e;
+        }
+
+        /* ===== 拖拽克隆 ===== */
+        .drag-clone {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.85;
+            transform: scale(1.05) rotate(-2deg);
+            filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.3));
+            transition: none;
+        }
+        .beaker.drop-highlight {
+            border-color: rgba(70, 160, 220, 0.8);
+            box-shadow: 0 0 30px rgba(70, 160, 220, 0.25), inset 0 0 30px rgba(70, 160, 220, 0.05);
+        }
+
+        /* ===== 底部信息 ===== */
+        .footer-info {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 12px;
+            color: #6b5a44;
+            padding: 0 6px;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .app {
+                padding: 12px;
+                border-radius: 25px;
+            }
+            .bench {
+                flex-direction: column;
+                align-items: center;
+                padding: 12px;
+                gap: 12px;
+            }
+            .materials {
+                flex: 1 1 auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                width: 100%;
+                padding: 10px 12px;
+            }
+            .materials .label {
+                width: 100%;
+                font-size: 12px;
+            }
+            .mat-item {
+                flex: 0 1 auto;
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+            .workspace {
+                min-width: 0;
+                width: 100%;
+            }
+            .controls {
+                flex: 1 1 auto;
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                padding: 12px;
+            }
+            .controls .ctrl-label {
+                width: 100%;
+                font-size: 12px;
+            }
+            .temp-control {
+                flex: 1 1 160px;
+            }
+            .temp-control .temp-display {
+                font-size: 24px;
+            }
+            .btn-group {
+                flex: 1 1 140px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .btn-group .btn {
+                flex: 1 1 100px;
+                font-size: 13px;
+                padding: 8px 6px;
+            }
+            .beaker {
+                max-width: 280px;
+                height: 130px;
+            }
+            .beaker .tube-slot {
+                gap: 8px;
+            }
+            .beaker .tube-slot .slot-item {
+                width: 30px;
+                height: 60px;
+            }
+            .beaker .tube-slot .slot-item .mini-tube {
+                width: 22px;
+                height: 45px;
+            }
+            .rack-area {
+                min-height: 140px;
+                justify-content: center;
+                gap: 10px;
+                padding: 6px 8px 4px;
+            }
+            .tube {
+                width: 42px;
+                height: 95px;
+            }
+            .tube .content .food .chunk {
+                width: 12px;
+                height: 9px;
+            }
+            .tube .content .food .crumb {
+                width: 5px;
+                height: 4px;
+            }
+            .rack-area .tube-label {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+            .step-indicator .step-dot {
+                font-size: 9px;
+                padding: 2px 8px;
+            }
+            .result-area .result-detail .r-item {
+                min-width: 80px;
+            }
+            .header h1 {
+                font-size: 18px;
+            }
+            .header .sub {
+                font-size: 11px;
+            }
+            .beaker .tube-slot .slot-item .slot-label {
+                font-size: 8px;
+                bottom: -16px;
+            }
+            .beaker-label {
+                font-size: 11px;
+            }
+            .hint-banner {
+                padding: 10px 16px;
+                min-height: 52px;
+            }
+            .hint-banner .hint-text {
+                font-size: 17px;
+            }
+            .modal-box {
+                padding: 20px 15px;
+            }
+            .modal-box .selector-group .options .opt-btn {
+                font-size: 13px;
+                padding: 6px 14px;
+                min-width: 60px;
+            }
+            .modal-box .stir-group .options .stir-btn {
+                font-size: 13px;
+                padding: 5px 16px;
+                min-width: 50px;
+            }
+            .status-display {
+                font-size: 13px;
+                padding: 4px 10px;
+                min-height: 34px;
+            }
+            .result-selector .btn-result {
+                font-size: 12px;
+                padding: 6px 12px;
+                min-width: 60px;
+            }
+        }
+        @media (max-width: 400px) {
+            .tube {
+                width: 36px;
+                height: 80px;
+            }
+            .beaker {
+                max-width: 200px;
+                height: 110px;
+            }
+            .beaker .tube-slot {
+                gap: 6px;
+            }
+            .beaker .tube-slot .slot-item {
+                width: 26px;
+                height: 50px;
+            }
+            .beaker .tube-slot .slot-item .mini-tube {
+                width: 18px;
+                height: 35px;
+            }
+            .rack-area {
+                min-height: 120px;
+            }
+            .hint-banner .hint-text {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app" id="app">
+        <!-- 标题 -->
+        <div class="header">
+            <h1>🧪 探究唾液淀粉酶对馒头的消化</h1>
+            <span class="sub">初中生物</span>
+        </div>
+
+        <!-- 醒目提示横幅 -->
+        <div class="hint-banner" id="hintBanner">
+            <div class="hint-text" id="hintText">
+                <span class="step-icon">💡</span>
+                请点击试管添加材料（淀粉 + 液体）
+            </div>
+        </div>
+
+        <!-- 实验台 -->
+        <div class="bench" id="bench">
+            <!-- 材料区 -->
+            <div class="materials">
+                <div class="label">📦 可用材料</div>
+                <div class="mat-item"><span class="icon">🧱</span> 馒头块</div>
+                <div class="mat-item"><span class="icon">🍞</span> 馒头屑</div>
+                <div class="mat-item"><span class="icon">💧</span> 唾液</div>
+                <div class="mat-item"><span class="icon">🚰</span> 清水</div>
+                <div style="font-size:11px;color:#6b5a44;text-align:center;opacity:0.6;">👆 点击试管添加</div>
+            </div>
+
+            <!-- 工作区 -->
+            <div class="workspace">
+                <!-- 试管架 -->
+                <div class="rack-area" id="rackArea">
+                    <span class="rack-label">🧪 试管架</span>
+                    <div class="tube-wrapper" data-tube="0" id="tube0-wrapper">
+                        <div class="tube" id="tube0"><div class="content" id="tube0-content"><div class="empty-msg">空</div></div></div>
+                        <span class="tube-label">试管 1</span>
+                    </div>
+                    <div class="tube-wrapper" data-tube="1" id="tube1-wrapper">
+                        <div class="tube" id="tube1"><div class="content" id="tube1-content"><div class="empty-msg">空</div></div></div>
+                        <span class="tube-label">试管 2</span>
+                    </div>
+                    <div class="tube-wrapper" data-tube="2" id="tube2-wrapper">
+                        <div class="tube" id="tube2"><div class="content" id="tube2-content"><div class="empty-msg">空</div></div></div>
+                        <span class="tube-label">试管 3</span>
+                    </div>
+                    <div class="tube-wrapper" data-tube="3" id="tube3-wrapper">
+                        <div class="tube" id="tube3"><div class="content" id="tube3-content"><div class="empty-msg">空</div></div></div>
+                        <span class="tube-label">试管 4</span>
+                    </div>
+                    <div style="font-size:11px;color:#6b5a44;margin-left:auto;padding-right:8px;opacity:0.6;align-self:center;">👆 拖拽到烧杯</div>
+                </div>
+
+                <!-- 烧杯 -->
+                <div class="beaker-area">
+                    <div class="beaker" id="beaker">
+                        <div class="water"></div>
+                        <div class="scale">
+                            <span data-label="500"></span><span data-label="400"></span>
+                            <span data-label="300"></span><span data-label="200"></span>
+                            <span data-label="100"></span>
+                        </div>
+                        <div class="tube-slot" id="tubeSlot">
+                            <div class="slot-item" id="slot0"><div class="mini-tube"><div class="mini-content default" id="mini0"></div></div><span class="slot-label">试管 1</span></div>
+                            <div class="slot-item" id="slot1"><div class="mini-tube"><div class="mini-content default" id="mini1"></div></div><span class="slot-label">试管 2</span></div>
+                            <div class="slot-item" id="slot2"><div class="mini-tube"><div class="mini-content default" id="mini2"></div></div><span class="slot-label">试管 3</span></div>
+                            <div class="slot-item" id="slot3"><div class="mini-tube"><div class="mini-content default" id="mini3"></div></div><span class="slot-label">试管 4</span></div>
+                        </div>
+                    </div>
+                    <span class="beaker-label">🔥 恒温水浴</span>
+                </div>
+
+                <!-- 步骤指示 -->
+                <div class="step-indicator" id="stepIndicator">
+                    <span class="step-dot active" data-step="0">① 加材料</span>
+                    <span class="step-dot" data-step="1">② 设条件</span>
+                    <span class="step-dot" data-step="2">③ 入烧杯</span>
+                    <span class="step-dot" data-step="3">④ 加热中</span>
+                    <span class="step-dot" data-step="4">⑤ 看结果</span>
+                </div>
+            </div>
+
+            <!-- 控制区 -->
+            <div class="controls" id="controls">
+                <div class="ctrl-label">🎛️ 实验控制</div>
+
+                <div class="temp-control">
+                    <div class="temp-display placeholder" id="tempDisplay">--<span>°C</span></div>
+                    <input type="range" id="tempSlider" min="25" max="60" value="25" step="0.5">
+                    <div class="temp-hint">👆 拖动设置温度 (25–60°C)</div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                    <span style="font-weight:600;color:#4d3e2b;font-size:13px;">⏱️ 水浴时长</span>
+                    <div class="time-selector" id="timeSelector">
+                        <button class="time-btn" data-time="2">2 min</button>
+                        <button class="time-btn" data-time="5">5 min</button>
+                        <button class="time-btn" data-time="10">10 min</button>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-reset" id="btnReset">🔄 重置实验</button>
+                </div>
+
+                <!-- 状态显示 -->
+                <div class="status-display" id="statusDisplay">
+                    <span class="status-icon" id="statusIcon">⏱️</span>
+                    <span id="statusText">等待操作</span>
+                </div>
+
+                <!-- 结果区域 -->
+                <div class="result-area" id="resultArea">
+                    <div class="result-title">📋 实验结果</div>
+                    <div id="resultContent">
+                        <div class="result-empty" id="resultEmpty">等待实验操作...</div>
+                        <div class="result-detail" id="resultDetail" style="display:none;"></div>
+                        <!-- 选择按钮（水浴结束后出现） -->
+                        <div class="result-selector" id="resultSelector" style="display:none;">
+                            <button class="btn btn-result" id="btnIodine">🔵 碘液结果</button>
+                            <button class="btn btn-result" id="btnMaltose">🧪 检测还原糖</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="footer-info">
+            <span>🔬 温度·时长·搅拌 影响消化效率</span>
+            <span>📌 颜色越深，淀粉剩余越多</span>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+            <h3 id="modalTitle">试管 <span id="modalTubeNum">1</span></h3>
+            <div class="modal-sub" id="modalSub">按取消可重新添加</div>
+            <div class="selector-group">
+                <div class="group-label">🍞 淀粉（二选一）</div>
+                <div class="options" id="starchOptions">
+                    <button class="opt-btn" data-value="block">馒头块</button>
+                    <button class="opt-btn" data-value="crumb">馒头屑</button>
+                </div>
+            </div>
+            <div class="selector-group">
+                <div class="group-label">💧 液体（二选一）</div>
+                <div class="options" id="liquidOptions">
+                    <button class="opt-btn" data-value="saliva">唾液</button>
+                    <button class="opt-btn" data-value="water">清水</button>
+                </div>
+            </div>
+            <div class="stir-group">
+                <div class="group-label">搅拌（针对本试管）</div>
+                <div class="options" id="stirOptions">
+                    <button class="stir-btn" data-value="yes">是</button>
+                    <button class="stir-btn selected" data-value="no">否</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn-confirm" id="modalConfirm" disabled>✔ 确认添加</button>
+                <button class="modal-btn-cancel" id="modalCancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ---------- DOM 引用 ----------
+            const TUBE_COUNT = 4;
+            const tubeWrappers = [
+                document.getElementById('tube0-wrapper'),
+                document.getElementById('tube1-wrapper'),
+                document.getElementById('tube2-wrapper'),
+                document.getElementById('tube3-wrapper')
+            ];
+            const tubeContents = [
+                document.getElementById('tube0-content'),
+                document.getElementById('tube1-content'),
+                document.getElementById('tube2-content'),
+                document.getElementById('tube3-content')
+            ];
+            const slotItems = [
+                document.getElementById('slot0'),
+                document.getElementById('slot1'),
+                document.getElementById('slot2'),
+                document.getElementById('slot3')
+            ];
+            const miniContents = [
+                document.getElementById('mini0'),
+                document.getElementById('mini1'),
+                document.getElementById('mini2'),
+                document.getElementById('mini3')
+            ];
+            const beaker = document.getElementById('beaker');
+            const tempSlider = document.getElementById('tempSlider');
+            const tempDisplay = document.getElementById('tempDisplay');
+            const statusDisplay = document.getElementById('statusDisplay');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            const resultArea = document.getElementById('resultArea');
+            const resultEmpty = document.getElementById('resultEmpty');
+            const resultDetail = document.getElementById('resultDetail');
+            const resultSelector = document.getElementById('resultSelector');
+            const btnIodine = document.getElementById('btnIodine');
+            const btnMaltose = document.getElementById('btnMaltose');
+            const hintBanner = document.getElementById('hintBanner');
+            const hintText = document.getElementById('hintText');
+            const btnReset = document.getElementById('btnReset');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalTubeNum = document.getElementById('modalTubeNum');
+            const modalSub = document.getElementById('modalSub');
+            const modalConfirm = document.getElementById('modalConfirm');
+            const modalCancel = document.getElementById('modalCancel');
+            const starchOptions = document.getElementById('starchOptions');
+            const liquidOptions = document.getElementById('liquidOptions');
+            const stirOptions = document.getElementById('stirOptions');
+            const toast = document.getElementById('toast');
+            const timeBtns = document.querySelectorAll('.time-btn');
+            const stepDots = document.querySelectorAll('.step-dot');
+
+            // ---------- 状态 ----------
+            const tubes = Array.from({ length: TUBE_COUNT }, () => ({
+                starch: null,
+                liquid: null,
+                inBeaker: false,
+                result: null,
+                _hydrolysis: 0,
+                stir: false
+            }));
+
+            let currentTubeIndex = null;
+            let selectedStarch = null;
+            let selectedLiquid = null;
+            let selectedStir = false;
+            let temperature = null;
+            let timeMinutes = null;
+            let isHeating = false;
+            let hasResult = false;
+            let timerHandle = null;
+
+            // ---------- 工具函数 ----------
+            function showToast(msg, duration = 3000) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(toast._hideTimer);
+                toast._hideTimer = setTimeout(() => { toast.classList.remove('show'); }, duration);
+            }
+
+            function updateStep(index) {
+                stepDots.forEach((dot, i) => {
+                    dot.classList.remove('active', 'done');
+                    if (i < index) dot.classList.add('done');
+                    else if (i === index) dot.classList.add('active');
+                });
+            }
+
+            function updateHintAndStatus() {
+                const hasComplete = tubes.some(t => t.starch !== null && t.liquid !== null);
+                const completeTubes = tubes.filter(t => t.starch !== null && t.liquid !== null);
+                const allCompleteInBeaker = completeTubes.every(t => t.inBeaker);
+                const tempSet = temperature !== null;
+                const timeSet = timeMinutes !== null;
+
+                if (hasResult) {
+                    setHint('✅ 实验已完成，请选择查看方式', 'result');
+                    setStatus('✅', '已完成');
+                    return;
+                }
+                if (isHeating) {
+                    setHint('⏳ 水浴加热中，请稍候...', 'heating');
+                    setStatus('⏳', '加热中...');
+                    return;
+                }
+                if (!hasComplete) {
+                    setHint('① 请分别点击试管添加材料（淀粉 + 液体）', 'default');
+                    setStatus('💡', '添加材料');
+                    updateStep(0);
+                    return;
+                }
+                if (!tempSet) {
+                    setHint('② 请调节水浴温度（拖动滑块）', 'default');
+                    setStatus('🌡️', '设置温度');
+                    updateStep(1);
+                    return;
+                }
+                if (!timeSet) {
+                    setHint('② 请选择水浴时长（点击时长按钮）', 'default');
+                    setStatus('⏱️', '选择时长');
+                    updateStep(1);
+                    return;
+                }
+                if (!allCompleteInBeaker) {
+                    const inCount = completeTubes.filter(t => t.inBeaker).length;
+                    const total = completeTubes.length;
+                    setHint(`③ 请将试管拖入烧杯 (${inCount}/${total})`, 'default');
+                    setStatus('👆', `拖入 ${inCount}/${total}`);
+                    updateStep(2);
+                    return;
+                }
+                if (hasComplete && allCompleteInBeaker && tempSet && timeSet && !isHeating && !hasResult) {
+                    startHeating();
+                }
+            }
+
+            function setHint(text, state) {
+                hintText.innerHTML = text;
+                hintBanner.className = 'hint-banner';
+                if (state === 'heating') hintBanner.classList.add('state-heating');
+                else if (state === 'result') hintBanner.classList.add('state-result');
+            }
+
+            function setStatus(icon, text) {
+                statusIcon.textContent = icon;
+                statusText.textContent = text;
+                if (icon === '⏳') {
+                    statusIcon.className = 'status-icon spin';
+                } else {
+                    statusIcon.className = 'status-icon';
+                }
+            }
+
+            // ---------- 渲染 ----------
+            function renderAllTubes() {
+                for (let i = 0; i < TUBE_COUNT; i++) {
+                    const content = tubeContents[i];
+                    const tube = tubes[i];
+                    const wrapper = tubeWrappers[i];
+                    wrapper.classList.toggle('in-beaker', tube.inBeaker);
+
+                    const label = wrapper.querySelector('.tube-label');
+                    let badge = label.querySelector('.stir-badge');
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'stir-badge';
+                        label.appendChild(badge);
+                    }
+                    if (tube.starch !== null && tube.liquid !== null) {
+                        badge.textContent = tube.stir ? '搅拌' : '不搅';
+                        badge.style.display = 'inline';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+
+                    let html = '';
+                    const hasStarch = tube.starch !== null;
+                    const hasLiquid = tube.liquid !== null;
+                    const hasResult = tube.result !== null;
+
+                    if (hasStarch) {
+                        html += `<div class="food">`;
+                        if (tube.starch === 'block') {
+                            for (let j = 0; j < 4; j++) html += `<div class="chunk"></div>`;
+                        } else {
+                            for (let j = 0; j < 12; j++) html += `<div class="crumb"></div>`;
+                        }
+                        html += `</div>`;
+                    } else {
+                        if (!hasLiquid) html += `<div class="empty-msg">空</div>`;
+                    }
+
+                    if (tube.liquid === 'saliva') html += `<div class="saliva"></div>`;
+                    else if (tube.liquid === 'water') html += `<div class="water-marker"></div>`;
+
+                    let status = '';
+                    if (hasStarch && hasLiquid) status = '✅ 完整';
+                    else if (hasStarch || hasLiquid) status = '⚠️ 缺' + (hasStarch ? '液体' : '底物');
+                    if (status) html += `<div class="status-text">${status}</div>`;
+
+                    if (hasResult) {
+                        html += `<div class="iodine ${tube.result}"></div>`;
+                    } else {
+                        html += `<div class="iodine" style="background:rgba(200,190,170,0.2);"></div>`;
+                    }
+
+                    content.innerHTML = html || `<div class="empty-msg">空</div>`;
+                }
+                updateMiniTubes();
+            }
+
+            function updateMiniTubes() {
+                for (let i = 0; i < TUBE_COUNT; i++) {
+                    const tube = tubes[i];
+                    const slot = slotItems[i];
+                    const mini = miniContents[i];
+                    // 根据是否在烧杯中决定是否显示迷你试管
+                    if (tube.inBeaker) {
+                        slot.classList.add('filled');
+                        // 设置颜色
+                        let cls = 'default';
+                        if (tube.result) cls = tube.result;
+                        mini.className = 'mini-content ' + cls;
+                    } else {
+                        slot.classList.remove('filled');
+                        // 重置颜色（但隐藏了，无所谓）
+                        mini.className = 'mini-content default';
+                    }
+                }
+            }
+
+            // ---------- 模态框 ----------
+            function openModal(tubeIndex) {
+                if (isHeating || hasResult) {
+                    showToast('⏳ 实验进行中或已完成，请先重置');
+                    return;
+                }
+                currentTubeIndex = tubeIndex;
+                modalTubeNum.textContent = tubeIndex + 1;
+                const tube = tubes[tubeIndex];
+                selectedStarch = null;
+                selectedLiquid = null;
+                selectedStir = tube.stir;
+                starchOptions.querySelectorAll('.opt-btn').forEach(b => {
+                    b.classList.remove('selected');
+                    if (b.dataset.value === tube.starch) b.classList.add('selected');
+                });
+                liquidOptions.querySelectorAll('.opt-btn').forEach(b => {
+                    b.classList.remove('selected');
+                    if (b.dataset.value === tube.liquid) b.classList.add('selected');
+                });
+                stirOptions.querySelectorAll('.stir-btn').forEach(b => {
+                    b.classList.remove('selected');
+                    if ((b.dataset.value === 'yes' && tube.stir) || (b.dataset.value === 'no' && !tube.stir)) {
+                        b.classList.add('selected');
+                    }
+                });
+                if (tube.starch && tube.liquid) {
+                    selectedStarch = tube.starch;
+                    selectedLiquid = tube.liquid;
+                }
+                modalConfirm.disabled = !(selectedStarch && selectedLiquid);
+                modalOverlay.classList.add('show');
+            }
+
+            function hideModal() {
+                modalOverlay.classList.remove('show');
+                currentTubeIndex = null;
+                selectedStarch = null;
+                selectedLiquid = null;
+                selectedStir = false;
+                modalConfirm.disabled = true;
+            }
+
+            starchOptions.addEventListener('click', function(e) {
+                const btn = e.target.closest('.opt-btn');
+                if (!btn) return;
+                starchOptions.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedStarch = btn.dataset.value;
+                modalConfirm.disabled = !(selectedStarch && selectedLiquid);
+            });
+
+            liquidOptions.addEventListener('click', function(e) {
+                const btn = e.target.closest('.opt-btn');
+                if (!btn) return;
+                liquidOptions.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedLiquid = btn.dataset.value;
+                modalConfirm.disabled = !(selectedStarch && selectedLiquid);
+            });
+
+            stirOptions.addEventListener('click', function(e) {
+                const btn = e.target.closest('.stir-btn');
+                if (!btn) return;
+                stirOptions.querySelectorAll('.stir-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedStir = (btn.dataset.value === 'yes');
+            });
+
+            modalConfirm.addEventListener('click', function() {
+                if (currentTubeIndex !== null && selectedStarch && selectedLiquid) {
+                    const idx = currentTubeIndex;
+                    tubes[idx].starch = selectedStarch;
+                    tubes[idx].liquid = selectedLiquid;
+                    tubes[idx].stir = selectedStir;
+                    tubes[idx].result = null;
+                    tubes[idx]._hydrolysis = 0;
+                    renderAllTubes();
+                    hideModal();
+                    const starchName = selectedStarch === 'block' ? '馒头块' : '馒头屑';
+                    const liquidName = selectedLiquid === 'saliva' ? '唾液' : '清水';
+                    const stirText = selectedStir ? '搅拌' : '不搅拌';
+                    showToast(`✅ 试管 ${idx+1}：${starchName} + ${liquidName}，${stirText}`);
+                    updateHintAndStatus();
+                    checkAutoStart();
+                }
+            });
+
+            modalCancel.addEventListener('click', hideModal);
+            modalOverlay.addEventListener('click', function(e) {
+                if (e.target === modalOverlay) hideModal();
+            });
+
+            tubeWrappers.forEach((wrapper, idx) => {
+                wrapper.addEventListener('click', function(e) {
+                    // 防止点击时触发拖拽
+                    if (!e._drag) openModal(idx);
+                });
+            });
+
+            // ---------- 温度 ----------
+            tempSlider.addEventListener('input', function() {
+                temperature = parseFloat(this.value);
+                tempDisplay.innerHTML = temperature.toFixed(0) + '<span>°C</span>';
+                tempDisplay.classList.remove('placeholder');
+                updateHintAndStatus();
+                checkAutoStart();
+            });
+
+            // ---------- 时长 ----------
+            timeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    timeBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    timeMinutes = parseInt(this.dataset.time);
+                    showToast(`⏱️ 水浴时长设为 ${timeMinutes} 分钟`);
+                    updateHintAndStatus();
+                    checkAutoStart();
+                });
+            });
+
+            // ---------- 自动开始 ----------
+            function checkAutoStart() {
+                if (isHeating || hasResult) return;
+                const hasComplete = tubes.some(t => t.starch !== null && t.liquid !== null);
+                if (!hasComplete) return;
+                const completeTubes = tubes.filter(t => t.starch !== null && t.liquid !== null);
+                const allInBeaker = completeTubes.every(t => t.inBeaker);
+                const tempSet = temperature !== null;
+                const timeSet = timeMinutes !== null;
+                if (hasComplete && allInBeaker && tempSet && timeSet) {
+                    startHeating();
+                }
+            }
+
+            // ---------- 加热 ----------
+            function startHeating() {
+                if (isHeating || hasResult) return;
+                if (temperature === null) { showToast('🌡️ 请先设置水浴温度'); return; }
+                if (timeMinutes === null) { showToast('⏱️ 请先选择水浴时长'); return; }
+                const completeTubes = tubes.filter(t => t.starch !== null && t.liquid !== null);
+                const allInBeaker = completeTubes.every(t => t.inBeaker);
+                if (!allInBeaker) { showToast('👆 请将所有已添加材料的试管拖入烧杯'); return; }
+
+                tubeWrappers.forEach(w => w.style.cursor = 'not-allowed');
+                isHeating = true;
+                updateStep(3);
+                updateHintAndStatus();
+                showToast('🌊 开始水浴加热...', 2000);
+
+                timerHandle = setTimeout(function() {
+                    timerHandle = null;
+                    finishHeating();
+                }, 3000);
+            }
+
+            // ---------- 科学计算 ----------
+            function computeResult(tube) {
+                if (tube.liquid === 'water') { tube._hydrolysis = 0; return 'darkblue'; }
+                if (!tube.starch) { tube._hydrolysis = 0; return 'brown'; }
+                if (tube.liquid !== 'saliva') { tube._hydrolysis = 0; return 'darkblue'; }
+
+                const temp = temperature;
+                const t = timeMinutes;
+                const isBlock = (tube.starch === 'block');
+                const T0 = 37,
+                    sigma = 12;
+                let f = Math.exp(-Math.pow(temp - T0, 2) / (2 * sigma * sigma));
+                if (temp > 50) { const decay = Math.max(0, 1 - (temp - 50) / 15);
+                    f *= decay; }
+                f = Math.max(0, Math.min(1, f));
+                let k = isBlock ? 0.8 : 1.5;
+                if (tube.stir) k *= 1.6;
+                const Km = 2.0;
+                const Vmax = k * f;
+                let H = 0;
+                if (t > 0) { H = (Vmax * t) / (Km + t); }
+                H = Math.max(0, Math.min(1, H));
+                tube._hydrolysis = H;
+                let color;
+                if (H < 0.20) color = 'darkblue';
+                else if (H < 0.45) color = 'blue';
+                else if (H < 0.70) color = 'lightblue';
+                else color = 'brown';
+                return color;
+            }
+
+            // ---------- 显示结果 ----------
+            let iodineShow = function() {};
+            let maltoseShow = function() {};
+
+            function defineShowFunctions() {
+                iodineShow = function() {
+                    resultEmpty.style.display = 'none';
+                    resultDetail.style.display = 'flex';
+                    const colorNames = { darkblue: '深蓝色', blue: '蓝色', lightblue: '浅蓝色', brown: '棕色' };
+                    const colorEmojis = { darkblue: '🔵', blue: '🟦', lightblue: '🟦', brown: '🟫' };
+                    let html = '';
+                    for (let i = 0; i < TUBE_COUNT; i++) {
+                        const tube = tubes[i];
+                        if (!tube.inBeaker) continue;
+                        const res = tube.result || 'brown';
+                        const starchName = tube.starch === 'block' ? '馒头块' : tube.starch === 'crumb' ? '馒头屑' : '无';
+                        const liquidName = tube.liquid === 'saliva' ? '唾液' : tube.liquid === 'water' ? '清水' : '无';
+                        const stirText = tube.stir ? '搅拌' : '不搅';
+                        html += `
+                            <div class="r-item">
+                                <div class="top">
+                                    <span>试管 ${i+1}</span>
+                                    <span style="font-size:10px;opacity:0.7;">(${starchName}+${liquidName}, ${stirText})</span>
+                                    <span class="color-dot ${res}"></span>
+                                    <span>${colorEmojis[res] || '⚪'} ${colorNames[res] || '未知'}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    html += `<div style="width:100%;text-align:center;font-size:13px;color:#4d3e2b;margin-top:6px;background:rgba(255,248,235,0.5);padding:4px 10px;border-radius:20px;">
+                        温度 ${temperature}°C · 时长 ${timeMinutes} min
+                    </div>`;
+                    resultDetail.innerHTML = html;
+                    resultArea.classList.add('show-result');
+                };
+
+                maltoseShow = function() {
+                    resultEmpty.style.display = 'none';
+                    resultDetail.style.display = 'flex';
+                    let html = '';
+                    for (let i = 0; i < TUBE_COUNT; i++) {
+                        const tube = tubes[i];
+                        if (!tube.inBeaker) continue;
+                        const res = tube.result || 'brown';
+                        const starchName = tube.starch === 'block' ? '馒头块' : tube.starch === 'crumb' ? '馒头屑' : '无';
+                        const liquidName = tube.liquid === 'saliva' ? '唾液' : tube.liquid === 'water' ? '清水' : '无';
+                        const hasMaltose = (tube.liquid === 'saliva' && tube._hydrolysis > 0.15);
+                        const maltoseText = hasMaltose ? '✅ 有麦芽糖（砖红色沉淀）' : '❌ 无麦芽糖（蓝色）';
+                        const colorNames = { darkblue: '深蓝色', blue: '蓝色', lightblue: '浅蓝色', brown: '棕色' };
+                        const colorEmojis = { darkblue: '🔵', blue: '🟦', lightblue: '🟦', brown: '🟫' };
+                        const stirText = tube.stir ? '搅拌' : '不搅';
+                        html += `
+                            <div class="r-item">
+                                <div class="top">
+                                    <span>试管 ${i+1}</span>
+                                    <span style="font-size:10px;opacity:0.7;">(${starchName}+${liquidName}, ${stirText})</span>
+                                </div>
+                                <div class="bottom" style="font-weight:bold;background:rgba(255,240,200,0.8);">
+                                    ${maltoseText}
+                                </div>
+                                <div style="font-size:10px;opacity:0.6;display:flex;align-items:center;gap:4px;">
+                                    <span>碘液对照：</span>
+                                    <span class="color-dot ${res}" style="width:16px;height:16px;"></span>
+                                    <span>${colorEmojis[res]} ${colorNames[res]}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    html += `<div style="width:100%;text-align:center;font-size:13px;color:#4d3e2b;margin-top:6px;background:rgba(255,248,235,0.5);padding:4px 10px;border-radius:20px;">
+                        温度 ${temperature}°C · 时长 ${timeMinutes} min
+                    </div>`;
+                    resultDetail.innerHTML = html;
+                    resultArea.classList.add('show-result');
+                };
+            }
+
+            function finishHeating() {
+                isHeating = false;
+                for (let i = 0; i < TUBE_COUNT; i++) {
+                    if (tubes[i].inBeaker) tubes[i].result = computeResult(tubes[i]);
+                }
+                hasResult = true;
+                renderAllTubes();
+                updateStep(4);
+                updateHintAndStatus();
+
+                defineShowFunctions();
+                resultEmpty.style.display = 'none';
+                resultDetail.style.display = 'none';
+                resultSelector.style.display = 'flex';
+                resultArea.classList.add('show-result');
+
+                btnIodine.classList.add('active');
+                btnMaltose.classList.remove('active');
+                iodineShow();
+
+                btnIodine.onclick = function() {
+                    btnIodine.classList.add('active');
+                    btnMaltose.classList.remove('active');
+                    iodineShow();
+                };
+                btnMaltose.onclick = function() {
+                    btnMaltose.classList.add('active');
+                    btnIodine.classList.remove('active');
+                    maltoseShow();
+                };
+                showToast('🎉 水浴完成！请选择查看方式');
+            }
+
+            // ---------- 重置 ----------
+            function resetExperiment() {
+                if (timerHandle) { clearTimeout(timerHandle);
+                    timerHandle = null; }
+                isHeating = false;
+                hasResult = false;
+                for (let i = 0; i < TUBE_COUNT; i++) {
+                    tubes[i] = { starch: null, liquid: null, inBeaker: false, result: null, _hydrolysis: 0, stir: false };
+                }
+                temperature = null;
+                tempDisplay.innerHTML = '--<span>°C</span>';
+                tempDisplay.classList.add('placeholder');
+                tempSlider.value = '25';
+                timeMinutes = null;
+                timeBtns.forEach(b => b.classList.remove('active'));
+                tubeWrappers.forEach(w => w.style.cursor = 'pointer');
+                resultEmpty.style.display = 'block';
+                resultDetail.style.display = 'none';
+                resultSelector.style.display = 'none';
+                resultArea.classList.remove('show-result');
+                resultDetail.innerHTML = '';
+                btnIodine.classList.remove('active');
+                btnMaltose.classList.remove('active');
+                renderAllTubes();
+                updateStep(0);
+                updateHintAndStatus();
+                const clone = document.getElementById('dragClone');
+                if (clone) clone.remove();
+                beaker.classList.remove('drop-highlight');
+                showToast('🔄 实验已重置');
+            }
+
+            // ---------- 拖拽系统（触摸优化） ----------
+            let dragData = null;
+            let dragStartX = 0,
+                dragStartY = 0;
+
+            function initDrag() {
+                const wrappers = tubeWrappers;
+
+                const startDrag = function(e) {
+                    if (isHeating || hasResult) { showToast('⏳ 实验进行中或已完成，请先重置'); return; }
+                    const isTouch = e.type === 'touchstart';
+                    if (isTouch) e.preventDefault();
+
+                    const wrapper = this;
+                    const idx = parseInt(wrapper.dataset.tube);
+                    const tube = tubes[idx];
+                    if (tube.inBeaker) { showToast('⚠️ 试管已在烧杯中'); return; }
+
+                    const pos = getEventPos(e);
+                    dragStartX = pos.clientX;
+                    dragStartY = pos.clientY;
+
+                    const rect = wrapper.getBoundingClientRect();
+                    dragData = {
+                        wrapper: wrapper,
+                        idx: idx,
+                        offsetX: pos.clientX - rect.left,
+                        offsetY: pos.clientY - rect.top,
+                        width: rect.width,
+                        height: rect.height,
+                        isTouch: isTouch,
+                        moved: false
+                    };
+
+                    const clone = wrapper.cloneNode(true);
+                    clone.style.position = 'fixed';
+                    clone.style.left = (pos.clientX - dragData.offsetX) + 'px';
+                    clone.style.top = (pos.clientY - dragData.offsetY) + 'px';
+                    clone.style.width = dragData.width + 'px';
+                    clone.style.pointerEvents = 'none';
+                    clone.style.zIndex = '9998';
+                    clone.style.opacity = '0.85';
+                    clone.style.transform = 'scale(1.05) rotate(-2deg)';
+                    clone.style.transition = 'none';
+                    clone.classList.add('drag-clone');
+                    clone.id = 'dragClone';
+                    document.body.appendChild(clone);
+
+                    wrapper.classList.add('dragging');
+                    beaker.classList.add('drop-highlight');
+                    document.body.style.overflow = 'hidden';
+                };
+
+                const moveDrag = function(e) {
+                    if (!dragData) return;
+                    const isTouch = e.type === 'touchmove';
+                    if (isTouch) e.preventDefault();
+
+                    const pos = getEventPos(e);
+                    if (!dragData.moved) {
+                        const dx = pos.clientX - dragStartX;
+                        const dy = pos.clientY - dragStartY;
+                        if (Math.sqrt(dx * dx + dy * dy) < 8) return;
+                        dragData.moved = true;
+                    }
+
+                    const clone = document.getElementById('dragClone');
+                    if (!clone) return;
+                    clone.style.left = (pos.clientX - dragData.offsetX) + 'px';
+                    clone.style.top = (pos.clientY - dragData.offsetY) + 'px';
+
+                    const beakerRect = beaker.getBoundingClientRect();
+                    const cx = pos.clientX,
+                        cy = pos.clientY;
+                    const inBeakerArea = cx >= beakerRect.left && cx <= beakerRect.right &&
+                        cy >= beakerRect.top && cy <= beakerRect.bottom;
+                    beaker.classList.toggle('drop-highlight', inBeakerArea);
+                };
+
+                const endDrag = function(e) {
+                    if (!dragData) return;
+                    const isTouch = e.type === 'touchend';
+                    if (isTouch) e.preventDefault();
+
+                    const clone = document.getElementById('dragClone');
+                    if (clone) clone.remove();
+
+                    dragData.wrapper.classList.remove('dragging');
+                    beaker.classList.remove('drop-highlight');
+                    document.body.style.overflow = '';
+
+                    if (dragData.moved) {
+                        const pos = getEventPos(e);
+                        const beakerRect = beaker.getBoundingClientRect();
+                        const cx = pos.clientX,
+                            cy = pos.clientY;
+                        const inBeakerArea = cx >= beakerRect.left && cx <= beakerRect.right &&
+                            cy >= beakerRect.top && cy <= beakerRect.bottom;
+                        if (inBeakerArea) {
+                            const idx = dragData.idx;
+                            if (!tubes[idx].inBeaker) {
+                                tubes[idx].inBeaker = true;
+                                showToast(`✅ 试管 ${idx+1} 已放入烧杯`);
+                                renderAllTubes();
+                                updateHintAndStatus();
+                                checkAutoStart();
+                            }
+                        }
+                    } else {
+                        // 未移动视为点击
+                        const idx = dragData.idx;
+                        openModal(idx);
+                    }
+                    dragData = null;
+                };
+
+                wrappers.forEach(wrapper => {
+                    wrapper.addEventListener('touchstart', startDrag, { passive: false });
+                    wrapper.addEventListener('mousedown', startDrag);
+                });
+                document.addEventListener('touchmove', moveDrag, { passive: false });
+                document.addEventListener('mousemove', moveDrag);
+                document.addEventListener('touchend', endDrag, { passive: false });
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('dragstart', e => e.preventDefault());
+            }
+
+            function getEventPos(e) {
+                if (e.touches && e.touches.length > 0) {
+                    return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+                }
+                if (e.changedTouches && e.changedTouches.length > 0) {
+                    return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY };
+                }
+                return { clientX: e.clientX, clientY: e.clientY };
+            }
+
+            // ---------- 事件绑定 ----------
+            btnReset.addEventListener('click', resetExperiment);
+            beaker.addEventListener('click', function() {
+                if (!isHeating && !hasResult) showToast('👆 拖拽试管到烧杯');
+            });
+
+            // ---------- 初始化 ----------
+            function init() {
+                renderAllTubes();
+                updateStep(0);
+                initDrag();
+                updateHintAndStatus();
+                showToast('🧪 点击试管添加材料，可设置搅拌（加热前）', 3000);
+            }
+            init();
+            window.resetExperiment = resetExperiment;
+        })();
+    </script>
+</body>
+</html>
